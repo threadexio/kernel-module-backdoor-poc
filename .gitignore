@@ -1,1 +1,10 @@
 /.vagrant
+
+.*
+*.ko
+*.mod*
+*.o
+*.symvers
+*.order
+
+/*/exploit
